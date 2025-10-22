@@ -33,15 +33,24 @@ final class WeatherRepositoryImpl: WeatherRepository {
                 case .success(let model):
                     self.db.save(model)
                     data = model
+                    
                 case .failure:
+                    // Fallback: if API fails, try cached data
                     if let cached = self.db.fetch(for: city) {
-                        data = WeatherData(city: cached.city, temperature: cached.temperature, windSpeed: cached.windSpeed, time: cached.time)
+                        data = WeatherData(
+                            city: cached.city,
+                            temperature: cached.temperature,
+                            windSpeed: cached.windSpeed,
+                            time: cached.time
+                        )
                     }
                 }
                 semaphore.signal()
             }
             
             semaphore.wait()
+            
+            // Return on main thread
             DispatchQueue.main.async {
                 completion(data)
             }
